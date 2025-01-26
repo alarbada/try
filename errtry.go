@@ -5,20 +5,28 @@ import (
 	"runtime"
 )
 
+// Err will panic if err is not nil. To "catch" the panic, use `try.Recover`
 func Err(err error) {
 	if err != nil {
 		panicWithFuncName(err)
 	}
 }
 
+// Panicf forces a panic with the given msg and args.
+func Panicf(msg string, args ...any) {
+	panicWithFuncName(fmt.Errorf(msg, args...))
+}
+
+// Wrapf panics if an arg of type "error" is passed.
 func Wrapf(msg string, args ...any) {
 	for _, arg := range args {
 		if _, ok := arg.(error); ok {
-			panic(fmt.Errorf(msg, args...))
+			panicWithFuncName(fmt.Errorf(msg, args...))
 		}
 	}
 }
 
+// Recover recovers from a panic and stores the error in e. If the recovered value is not an error, it will be wrapped in an error
 func Recover(e *error) {
 	if recovered := recover(); recovered != nil {
 		if err, ok := recovered.(error); ok {
@@ -37,11 +45,3 @@ func panicWithFuncName(err error) {
 	functionName := runtime.FuncForPC(pc).Name()
 	panic(fmt.Errorf("%s: %w", functionName, err))
 }
-
-type tryer struct{}
-
-var Tryer tryer
-
-func (tryer) Try(err error)                 { Err(err) }
-func (tryer) Wrapf(msg string, args ...any) { Wrapf(msg, args...) }
-func (tryer) Recover(e *error)              { Recover(e) }
