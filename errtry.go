@@ -37,6 +37,18 @@ func Recover(e *error) {
 	}
 }
 
+func RecoverFunc(e *error, fn func(error)) {
+	if recovered := recover(); recovered != nil {
+		if err, ok := recovered.(error); ok {
+			*e = err
+		} else {
+			*e = fmt.Errorf("unexpected panic: %v", recovered)
+		}
+
+		fn(*e)
+	}
+}
+
 func panicWithFuncName(err error) {
 	pc, _, _, ok := runtime.Caller(2)
 	if !ok {
