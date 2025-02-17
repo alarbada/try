@@ -20,7 +20,12 @@ func Panicf(msg string, args ...any) {
 // Wrapf panics if an arg of type "error" is passed.
 func Wrapf(msg string, args ...any) {
 	for _, arg := range args {
-		if _, ok := arg.(error); ok {
+		err, ok := arg.(error)
+		if !ok {
+			continue
+		}
+
+		if err != nil {
 			panicWithFuncName(fmt.Errorf(msg, args...))
 		}
 	}
