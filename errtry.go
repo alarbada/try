@@ -1,9 +1,19 @@
 package try
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 )
+
+type panicError struct {
+	Function string
+	Err      error
+}
+
+func (p panicError) Error() string {
+	return fmt.Sprintf("%s: %v", p.Function, p.Err)
+}
 
 // Err will panic if err is not nil. To "catch" the panic, use `try.Recover`
 func Err(err error) {
@@ -42,23 +52,19 @@ func Recover(e *error) {
 	}
 }
 
-func RecoverFunc(e *error, fn func(error)) {
-	if recovered := recover(); recovered != nil {
-		if err, ok := recovered.(error); ok {
-			*e = err
-		} else {
-			*e = fmt.Errorf("unexpected panic: %v", recovered)
-		}
-
-		fn(*e)
-	}
-}
-
 func panicWithFuncName(err error) {
 	pc, _, _, ok := runtime.Caller(2)
 	if !ok {
-		panic(fmt.Errorf("unknown function: %w", err))
+		panic(panicError{"unknown function", err})
 	}
 	functionName := runtime.FuncForPC(pc).Name()
-	panic(fmt.Errorf("%s: %w", functionName, err))
+	panic(panicError{functionName, err})
+}
+
+func Unwrap(err error) error {
+	var pErr panicError
+	for errors.As(err, &pErr) {
+		err = pErr.Err
+	}
+	return err
 }
